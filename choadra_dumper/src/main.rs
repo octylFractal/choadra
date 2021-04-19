@@ -1,6 +1,6 @@
 #![deny(warnings)]
 
-use std::net::{TcpStream, ToSocketAddrs};
+use std::net::{TcpStream, ToSocketAddrs, SocketAddr};
 use std::process::exit;
 
 use anyhow::Context;
@@ -42,11 +42,23 @@ fn main_for_result(args: ChoadraDumper) -> anyhow::Result<()> {
         style_e(format!("Connected to {}!", socket_addr)).green()
     );
 
-    let mut client = ChoadraClient::new(stream)
+    check_status(socket_addr, stream)?;
+
+    Ok(())
+}
+
+fn check_status(socket_addr: SocketAddr, stream: TcpStream) -> anyhow::Result<()> {
+    let mut status_client = ChoadraClient::new(stream)
         .request_status()
         .context("Failed to request status packet from server")?;
 
-    let ping = client.ping().context("Failed to ping server")?;
+    let response = status_client
+        .status()
+        .context("Failed to get status of server")?;
+
+    println!("Status packet is: {:#?}", response);
+
+    let ping = status_client.ping().context("Failed to ping server")?;
 
     println!("Ping time to {} is {}ms", socket_addr, ping.as_millis());
 

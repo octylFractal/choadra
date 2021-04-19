@@ -3,12 +3,12 @@ use crate::protocol::c2s::{C2SPacket, PacketWriteState};
 use crate::protocol::datatype::aliases::Long;
 use crate::protocol::datatype::writeable::Writeable;
 use crate::protocol::handshake::c2s::{ConnectionState, Handshake};
-use crate::protocol::s2c::S2CPacket;
-use crate::protocol::status::c2s::Ping;
-use crate::protocol::status::s2c::{Pong, S2CStatusPacket};
+use crate::protocol::status::c2s::{Ping, Request};
+use crate::protocol::status::s2c::{Pong, S2CStatusPacket, Response};
 use std::io::{BufReader, BufWriter};
 use std::net::TcpStream;
 use std::time::{Duration, Instant};
+use crate::protocol::s2c::read_s2c_packet;
 
 #[derive(Debug)]
 pub struct ChoadraClient<S> {
@@ -62,12 +62,12 @@ impl ChoadraClient<Status> {
         let packet = C2SPacket::new(Ping(rng));
         let now = Instant::now();
         self.write(packet)?;
-        let s2cpacket = S2CPacket::read(
+        let s2c_packet = read_s2c_packet(
             &mut self.reader,
             self.packet_write_state.compression_threshold(),
         )?;
         let elapsed = now.elapsed();
-        let packet: Pong = match s2cpacket {
+        let packet: Pong = match s2c_packet {
             S2CStatusPacket::Pong(p) => p,
             S2CStatusPacket::Response(_) => {
                 return Err(ChoadraError::ServerError {
@@ -83,6 +83,25 @@ impl ChoadraClient<Status> {
         }
 
         Ok(elapsed)
+    }
+
+    pub fn status(&mut self) -> ChoadraResult<Response> {
+        let packet = C2SPacket::new(Request);
+        self.write(packet)?;
+        let s2c_packet = read_s2c_packet(
+            &mut self.reader,
+            self.packet_write_state.compression_threshold(),
+        )?;
+        let response = match s2c_packet {
+            S2CStatusPacket::Response(r) => r,
+            S2CStatusPacket::Pong(_) => {
+                return Err(ChoadraError::ServerError {
+                    msg: "Got a Pong instead of a Response".to_string(),
+                })
+            }
+        };
+
+        Ok(response)
     }
 }
 

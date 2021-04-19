@@ -24,7 +24,7 @@ pub struct Response {
     pub version: VersionInfo,
     pub players: PlayerInfo,
     pub description: DescriptionInfo,
-    pub favicon: String,
+    pub favicon: Option<String>,
 }
 
 impl BinRead for Response {
@@ -56,6 +56,7 @@ pub struct VersionInfo {
 pub struct PlayerInfo {
     pub max: u32,
     pub online: u32,
+    #[serde(default)]
     pub sample: Vec<PlayerSample>,
 }
 
