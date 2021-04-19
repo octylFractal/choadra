@@ -6,8 +6,9 @@ use std::process::exit;
 use anyhow::Context;
 use structopt::StructOpt;
 
-use crate::ezconsole::style_e;
+use crate::ezconsole::{style_e, TextComponent};
 use choadra::client::ChoadraClient;
+use console::Style;
 
 mod ezconsole;
 
@@ -56,11 +57,39 @@ fn check_status(socket_addr: SocketAddr, stream: TcpStream) -> anyhow::Result<()
         .status()
         .context("Failed to get status of server")?;
 
-    println!("Status packet is: {:#?}", response);
+    println!(
+        "{}",
+        TextComponent::of_style(Style::new().bright().blue()).mutate_children(|c| {
+            c.extend(vec![
+                TextComponent::of_styled(socket_addr, Style::new().cyan()),
+                TextComponent::of(" describes itself as a "),
+                TextComponent::of_styled(response.version.name, Style::new().cyan()),
+                TextComponent::of(" server, implementing protocol "),
+                TextComponent::of_styled(response.version.protocol, Style::new().cyan()),
+                TextComponent::of(". Players: "),
+                TextComponent::of_styled(response.players.online, Style::new().red()),
+                TextComponent::of("/"),
+                TextComponent::of_styled(response.players.max, Style::new().green()),
+                TextComponent::of(". MOTD: "),
+                TextComponent::of_styled(response.description.text, Style::new().cyan()),
+            ]);
+        }),
+    );
 
     let ping = status_client.ping().context("Failed to ping server")?;
 
-    println!("Ping time to {} is {}ms", socket_addr, ping.as_millis());
+    println!(
+        "{}",
+        TextComponent::of_style(Style::new().bright().blue()).mutate_children(|c| {
+            c.extend(vec![
+                TextComponent::of("Ping time to "),
+                TextComponent::of_styled(socket_addr, Style::new().cyan()),
+                TextComponent::of(" is "),
+                TextComponent::of_styled(ping.as_millis(), Style::new().cyan()),
+                TextComponent::of_styled("ms", Style::new().cyan()),
+            ]);
+        }),
+    );
 
     Ok(())
 }
