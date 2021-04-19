@@ -1,9 +1,9 @@
 use std::io::Write;
 
+use crate::protocol::c2s::IdentityPacket;
 use crate::protocol::datatype::aliases::{Int, UnsignedShort};
 use crate::protocol::datatype::varint::VarInt;
 use crate::protocol::datatype::writeable::Writeable;
-use crate::protocol::c2s::IdentityPacket;
 
 const CURRENT_PROTOCOL_VERSION: i32 = 754;
 

@@ -1,6 +1,6 @@
 #![deny(warnings)]
 
-use std::net::{TcpStream, ToSocketAddrs, SocketAddr};
+use std::net::{SocketAddr, TcpStream, ToSocketAddrs};
 use std::process::exit;
 
 use anyhow::Context;

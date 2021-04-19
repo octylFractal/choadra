@@ -3,12 +3,12 @@ use crate::protocol::c2s::{C2SPacket, PacketWriteState};
 use crate::protocol::datatype::aliases::Long;
 use crate::protocol::datatype::writeable::Writeable;
 use crate::protocol::handshake::c2s::{ConnectionState, Handshake};
+use crate::protocol::s2c::read_s2c_packet;
 use crate::protocol::status::c2s::{Ping, Request};
-use crate::protocol::status::s2c::{Pong, S2CStatusPacket, Response};
+use crate::protocol::status::s2c::{Pong, Response, S2CStatusPacket};
 use std::io::{BufReader, BufWriter};
 use std::net::TcpStream;
 use std::time::{Duration, Instant};
-use crate::protocol::s2c::read_s2c_packet;
 
 #[derive(Debug)]
 pub struct ChoadraClient<S> {
