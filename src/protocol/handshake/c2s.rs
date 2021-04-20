@@ -5,7 +5,7 @@ use crate::protocol::datatype::aliases::{Int, UnsignedShort};
 use crate::protocol::datatype::varint::VarInt;
 use crate::protocol::datatype::writeable::Writeable;
 
-const CURRENT_PROTOCOL_VERSION: i32 = 754;
+pub const CURRENT_PROTOCOL_VERSION: u32 = 754;
 
 #[derive(Debug)]
 pub struct Handshake {
@@ -22,7 +22,7 @@ impl Handshake {
         next_state: ConnectionState,
     ) -> Self {
         Handshake {
-            protocol_version: CURRENT_PROTOCOL_VERSION,
+            protocol_version: CURRENT_PROTOCOL_VERSION as i32,
             server_address: address.to_string(),
             server_port: port,
             next_state,

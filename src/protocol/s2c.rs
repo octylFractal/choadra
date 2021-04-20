@@ -1,4 +1,6 @@
+use std::cell::RefCell;
 use std::io::Cursor;
+use std::rc::Rc;
 
 use binread::io::Read;
 use binread::{BinRead, Endian, ReadOptions};
@@ -8,15 +10,62 @@ use crate::error::{ChoadraError, ChoadraResult};
 use crate::protocol::datatype::aliases::Int;
 use crate::protocol::datatype::varint::parse_varint;
 
+pub struct PacketReadState(Rc<PacketReadStateInner>);
+
+struct PacketReadStateInner {
+    pub compression_threshold: Option<Int>,
+    zlib_decoder: RefCell<ZlibDecoder<OptionalRead<Cursor<Vec<u8>>>>>,
+}
+
+impl PacketReadState {
+    pub fn compression_threshold(&self) -> Option<Int> {
+        self.0.compression_threshold
+    }
+
+    pub fn set_compression_threshold(&mut self, new_value: Option<Int>) {
+        let x = Rc::get_mut(&mut self.0).unwrap();
+        x.compression_threshold = new_value;
+    }
+}
+
+impl Default for PacketReadState {
+    fn default() -> Self {
+        PacketReadState(Rc::new(PacketReadStateInner {
+            compression_threshold: None,
+            zlib_decoder: RefCell::new(ZlibDecoder::new(OptionalRead { inner: None })),
+        }))
+    }
+}
+
+impl Clone for PacketReadState {
+    fn clone(&self) -> Self {
+        PacketReadState(Rc::clone(&self.0))
+    }
+}
+
+#[derive(Debug)]
+struct OptionalRead<R: Read> {
+    inner: Option<R>,
+}
+
+impl<R: Read> Read for OptionalRead<R> {
+    fn read(&mut self, buf: &mut [u8]) -> std::io::Result<usize> {
+        match &mut self.inner {
+            Some(r) => r.read(buf),
+            None => Ok(0),
+        }
+    }
+}
+
 pub fn read_s2c_packet<T: BinRead<Args = (Int,)>, R: Read>(
-    reader: &mut R,
-    compressed_threshold: Option<i32>,
+    mut reader: R,
+    args: PacketReadState,
 ) -> ChoadraResult<T> {
     let mut options = ReadOptions::default();
     options.endian = Endian::Big;
-    let length = parse_varint(reader, &options, ())?;
-    let uncompressed_length = match compressed_threshold {
-        Some(max) => match parse_varint(reader, &options, ())? {
+    let length = parse_varint(&mut reader, &options, ())?;
+    let uncompressed_length = match args.compression_threshold() {
+        Some(max) => match parse_varint(&mut reader, &options, ())? {
             0 => None,
             x => {
                 if x > max {
@@ -33,7 +82,17 @@ pub fn read_s2c_packet<T: BinRead<Args = (Int,)>, R: Read>(
     let mut uncompressed = vec![0u8; uncompressed_length.unwrap_or(length) as usize];
     if uncompressed_length.is_some() {
         // Decompress into the vec
-        ZlibDecoder::new(reader.take(length as u64)).read_exact(&mut uncompressed)?;
+        let compressed = {
+            let mut compressed = vec![0u8; length as usize];
+            reader.read_exact(&mut compressed)?;
+            compressed
+        };
+        let mut decoder = args.0.zlib_decoder.borrow_mut();
+        let empty_read = decoder.reset(OptionalRead {
+            inner: Some(Cursor::new(compressed)),
+        });
+        decoder.read_exact(&mut uncompressed)?;
+        decoder.reset(empty_read);
     } else {
         // Just read into the vec
         reader.read_exact(&mut uncompressed)?;

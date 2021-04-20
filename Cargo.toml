@@ -25,6 +25,10 @@ fixed = "1.7"
 flate2 = "1"
 serde_json = "1"
 rand = "0.8"
+x509-parser = "0.9"
+aes = "0.6"
+cfb8 = "0.6"
+rsa = "0.4"
 
 [dependencies.serde]
 version = "1"

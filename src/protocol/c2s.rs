@@ -25,10 +25,9 @@ pub trait IdentityPacket {
     const ID: Int;
 }
 
-#[derive(Debug, Clone)]
+#[derive(Clone)]
 pub struct PacketWriteState(Rc<PacketWriteStateInner>);
 
-#[derive(Debug)]
 struct PacketWriteStateInner {
     pub compression_threshold: Option<Int>,
     zlib_encoder: RefCell<ZlibEncoder<OptionalWrite<Vec<u8>>>>,
@@ -85,10 +84,35 @@ where
     type Args = PacketWriteState;
 
     fn write_to<W: Write>(&self, write: &mut W, args: Self::Args) -> std::io::Result<()> {
+        let uncompressed_content = self.write_uncompressed_packet()?;
+
+        let final_content =
+            <C2SPacket<T>>::compress_packet_if_needed(args.clone(), uncompressed_content)?;
+
+        write.write_all(&final_content)?;
+        write.flush()?;
+
+        Ok(())
+    }
+}
+
+impl<T> C2SPacket<T>
+where
+    T: Writeable<Args = ()>,
+{
+    fn write_uncompressed_packet(&self) -> std::io::Result<Vec<u8>> {
         let mut uncompressed_content = Vec::new();
         VarInt(self.id).write_to(&mut uncompressed_content, ())?;
         &self.inner.write_to(&mut uncompressed_content, ())?;
+        Ok(uncompressed_content)
+    }
+}
 
+impl<T> C2SPacket<T> {
+    fn compress_packet_if_needed(
+        args: PacketWriteState,
+        uncompressed_content: Vec<u8>,
+    ) -> std::io::Result<Vec<u8>> {
         let uncompressed_length = uncompressed_content.len();
         if let Some(threshold) = args.compression_threshold() {
             // Compressed packet format
@@ -106,29 +130,33 @@ where
 
                 let data_length_bytes = VarInt(uncompressed_length as Int).bytes();
                 (
-                    data_length_bytes + content.len() as u32,
+                    data_length_bytes + content.len(),
                     uncompressed_length as Int,
                     content,
                 )
             } else {
                 (
-                    uncompressed_length as u32 + VarInt(0).bytes(),
+                    uncompressed_length + VarInt(0).bytes(),
                     0,
                     uncompressed_content,
                 )
             };
 
-            VarInt(packet_length as Int).write_to(write, ())?;
-            VarInt(data_length).write_to(write, ())?;
-            write.write_all(&data)?;
+            let mut result = Vec::with_capacity(
+                VarInt(packet_length as Int).bytes() + VarInt(data_length).bytes() + data.len(),
+            );
+            VarInt(packet_length as Int).write_to(&mut result, ())?;
+            VarInt(data_length).write_to(&mut result, ())?;
+            result.write_all(&data)?;
+            Ok(result)
         } else {
             // Uncompressed packet format
-            VarInt(uncompressed_length as Int).write_to(write, ())?;
-            write.write_all(&uncompressed_content)?;
+            let mut result = Vec::with_capacity(
+                VarInt(uncompressed_length as Int).bytes() + uncompressed_content.len(),
+            );
+            VarInt(uncompressed_length as Int).write_to(&mut result, ())?;
+            result.write_all(&uncompressed_content)?;
+            Ok(result)
         }
-
-        write.flush()?;
-
-        Ok(())
     }
 }

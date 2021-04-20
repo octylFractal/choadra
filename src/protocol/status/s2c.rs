@@ -9,9 +9,9 @@ use crate::protocol::datatype::string::parse_string;
 #[br(import(id: Int))]
 #[derive(Debug)]
 pub enum S2CStatusPacket {
-    #[br(pre_assert(id == 0))]
+    #[br(pre_assert(id == 0x00))]
     Response(Response),
-    #[br(pre_assert(id == 1))]
+    #[br(pre_assert(id == 0x01))]
     Pong(Pong),
 }
 

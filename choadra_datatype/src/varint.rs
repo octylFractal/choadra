@@ -23,7 +23,7 @@ pub struct VarLong(pub Long);
 
 impl VarInt {
     /// Return the number of bytes need to represent the number.
-    pub const fn bytes(self) -> u32 {
+    pub const fn bytes(self) -> usize {
         let mut j = 1;
         while j < 5 {
             if (self.0 & -1 << j * 7) == 0 {

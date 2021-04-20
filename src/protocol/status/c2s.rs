@@ -1,7 +1,8 @@
+use std::io::Write;
+
 use crate::protocol::c2s::IdentityPacket;
 use crate::protocol::datatype::aliases::{Int, Long};
 use crate::protocol::datatype::writeable::Writeable;
-use std::io::Write;
 
 #[derive(Debug)]
 pub struct Request;

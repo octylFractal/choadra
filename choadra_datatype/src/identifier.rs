@@ -60,6 +60,26 @@ impl FromStr for Identifier {
     }
 }
 
+impl BinRead for Identifier {
+    type Args = ();
+
+    fn read_options<R: Read + Seek>(
+        reader: &mut R,
+        options: &ReadOptions,
+        _args: Self::Args,
+    ) -> BinResult<Self> {
+        parse_string(reader, options, (None,))?
+            .parse()
+            .or_else(|e| {
+                let pos = reader.seek(SeekFrom::Current(0))?;
+                Err(binread::Error::Custom {
+                    pos,
+                    err: Box::new(e),
+                })
+            })
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -146,25 +166,5 @@ mod tests {
             Err(IdentifierError::InvalidPathCharacter),
             "minecraft:&&&&".parse::<Identifier>()
         );
-    }
-}
-
-impl BinRead for Identifier {
-    type Args = ();
-
-    fn read_options<R: Read + Seek>(
-        reader: &mut R,
-        options: &ReadOptions,
-        _args: Self::Args,
-    ) -> BinResult<Self> {
-        parse_string(reader, options, (None,))?
-            .parse()
-            .or_else(|e| {
-                let pos = reader.seek(SeekFrom::Current(0))?;
-                Err(binread::Error::Custom {
-                    pos,
-                    err: Box::new(e),
-                })
-            })
     }
 }
