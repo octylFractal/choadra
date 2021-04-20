@@ -190,7 +190,7 @@ mod tests {
     fn write_varint_test() {
         for (input, expected) in VARINT_CASES.iter() {
             let mut new_data = Vec::new();
-            write_varint(&mut new_data, *input).unwrap();
+            VarInt(*input).write_to(&mut new_data, ()).unwrap();
             assert_eq!(*expected, &new_data);
         }
     }
@@ -256,7 +256,7 @@ mod tests {
     fn write_varlong_test() {
         for (input, expected) in VARLONG_CASES.iter() {
             let mut new_data = Vec::new();
-            write_varlong(&mut new_data, *input).unwrap();
+            VarLong(*input).write_to(&mut new_data, ()).unwrap();
             assert_eq!(*expected, &new_data);
         }
     }
