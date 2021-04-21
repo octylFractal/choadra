@@ -21,15 +21,18 @@ pub struct Agent {
 impl Authenticate {
     pub fn exchange(&self) -> HttpChoadraResult<AuthenticateResponse> {
         let resp = attohttpc::post("https://authserver.mojang.com/authenticate")
-                .header("Content-type", "application/json")
-                .body(Json(self))
-                .send()?;
+            .header("User-agent", "choadra")
+            .header("Content-type", "application/json")
+            .body(Json(self))
+            .send()?;
         if resp.is_success() {
             return Ok(resp.json()?);
         }
-        return Err(HttpChoadraError::ExtractedHttpError(
-            format!("Code: {}, Body: {}", resp.status(), resp.text()?)
-        ));
+        return Err(HttpChoadraError::ExtractedHttpError(format!(
+            "Code: {}, Body: {}",
+            resp.status(),
+            resp.text()?
+        )));
     }
 }
 
