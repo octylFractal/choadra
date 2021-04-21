@@ -8,7 +8,7 @@ use flate2::read::ZlibDecoder;
 
 use crate::error::{ChoadraError, ChoadraResult};
 use crate::protocol::datatype::aliases::Int;
-use crate::protocol::datatype::varint::parse_varint;
+use crate::protocol::datatype::varint::{parse_varint, VarInt};
 
 pub struct PacketReadState(Rc<PacketReadStateInner>);
 
@@ -64,9 +64,9 @@ pub fn read_s2c_packet<T: BinRead<Args = (Int,)>, R: Read>(
     let mut options = ReadOptions::default();
     options.endian = Endian::Big;
     let length = parse_varint(&mut reader, &options, ())?;
-    let (need_decompress, inner_length) = match args.compression_threshold() {
+    let (compressed_length, uncompressed_length) = match args.compression_threshold() {
         Some(min) => match parse_varint(&mut reader, &options, ())? {
-            0 => (false, length - 1),
+            0 => (None, length - 1),
             x => {
                 if x < min {
                     return Err(ChoadraError::ServerError {
@@ -76,17 +76,17 @@ pub fn read_s2c_packet<T: BinRead<Args = (Int,)>, R: Read>(
                         ),
                     });
                 }
-                (true, x)
+                (Some(length - VarInt(x).bytes() as Int), x)
             }
         },
-        None => (false, length),
+        None => (None, length),
     };
 
-    let mut uncompressed = vec![0u8; inner_length as usize];
-    if need_decompress {
+    let mut uncompressed = vec![0u8; uncompressed_length as usize];
+    if let Some(compressed_length) = compressed_length {
         // Decompress into the vec
         let compressed = {
-            let mut compressed = vec![0u8; length as usize];
+            let mut compressed = vec![0u8; compressed_length as usize];
             reader.read_exact(&mut compressed)?;
             compressed
         };

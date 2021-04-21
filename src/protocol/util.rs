@@ -46,6 +46,16 @@ mod tests {
     use sha1::{Digest, Sha1};
 
     use super::*;
+    use binread::io::Cursor;
+
+    #[test]
+    fn test_parse_until_eof() {
+        let input = vec![0x1, 0x2, 0x3];
+        let result =
+            parse_until_eof::<_, u8, _>(&mut Cursor::new(input.clone()), &ReadOptions::default(), ())
+                .expect("Failed to parse");
+        assert_eq!(input, result);
+    }
 
     #[test]
     fn test_mojang_hex_encode() {

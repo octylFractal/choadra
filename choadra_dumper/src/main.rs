@@ -155,7 +155,7 @@ fn interactive(
             TextComponent::of_style(Style::new().dim().green()).mutate_children(|c| {
                 c.extend(vec![
                     TextComponent::of("Received play packet: "),
-                    TextComponent::of_styled(format!("{:#?}", next), Style::new().cyan()),
+                    TextComponent::of_styled(format!("{:#X?}", next), Style::new().cyan()),
                 ]);
             }),
         );
