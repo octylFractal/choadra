@@ -1,8 +1,13 @@
-use console::{style, Style, StyledObject};
 use std::fmt::{Display, Formatter};
+
+use console::{style, Style, StyledObject};
 
 pub(crate) fn style_e<D>(val: D) -> StyledObject<D> {
     style(val).for_stderr()
+}
+
+pub(crate) fn new_style_e() -> Style {
+    Style::new().for_stderr()
 }
 
 pub(crate) struct TextComponent {

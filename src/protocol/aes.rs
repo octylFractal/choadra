@@ -1,7 +1,8 @@
+use std::io::{Read, Write};
+
 use aes::cipher::StreamCipher;
 use aes::Aes128;
 use cfb8::Cfb8;
-use std::io::{Read, Write};
 
 pub struct AesStream<S> {
     inner: S,

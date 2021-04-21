@@ -16,8 +16,15 @@ version = "1.16.5"
 [dependencies]
 anyhow = "1"
 console = "0.14"
+rpassword = "5"
 binread = "2"
 structopt = "0.3"
+directories-next = "2"
+once_cell = "1"
+
+[dependencies.uuid]
+version = "0.8"
+features = ["v4"]
 
 [dependencies.choadra]
 version = "0.1.0"

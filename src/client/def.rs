@@ -2,15 +2,16 @@ use std::fmt::{Debug, Formatter};
 use std::io::{BufWriter, Write};
 use std::net::TcpStream;
 
+use binread::io::Read;
 use binread::BinRead;
 
 use crate::error::ChoadraResult;
 use crate::protocol::aes::AesStream;
 use crate::protocol::c2s::{C2SPacket, IdentityPacket, PacketWriteState};
 use crate::protocol::datatype::aliases::Int;
+use crate::protocol::datatype::uuid::UUID;
 use crate::protocol::datatype::writeable::Writeable;
 use crate::protocol::s2c::{read_s2c_packet, PacketReadState};
-use binread::io::Read;
 
 pub struct ChoadraClient<S> {
     pub(crate) writer: EncryptableStream<BufWriter<TcpStream>>,
@@ -36,6 +37,10 @@ impl<S: Debug> Debug for ChoadraClient<S> {
 }
 
 impl<S> ChoadraClient<S> {
+    pub fn state(&self) -> &S {
+        &self.state
+    }
+
     pub(crate) fn into_other_variant<N>(self, new_state: N) -> ChoadraClient<N> {
         ChoadraClient {
             writer: self.writer,
@@ -118,4 +123,13 @@ pub struct Status;
 pub struct Login;
 
 #[derive(Debug)]
-pub struct Play;
+pub struct Play {
+    pub username: String,
+    pub uuid: UUID,
+}
+
+#[derive(Debug)]
+pub struct Credentials {
+    pub token: String,
+    pub profile: String,
+}

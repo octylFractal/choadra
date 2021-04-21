@@ -1,4 +1,4 @@
-pub use def::{ChoadraClient, Handshaking, Login, Play, Status};
+pub use def::{ChoadraClient, Credentials, Handshaking, Login, Play, Status};
 
 mod def;
 mod impl_handshaking;
