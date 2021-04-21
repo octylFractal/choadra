@@ -11,12 +11,10 @@ use choadra::client::{ChoadraClient, Credentials};
 use choadra::error::ChoadraError;
 use choadra::protocol::handshake::c2s::CURRENT_PROTOCOL_VERSION;
 
-use crate::auth::authenticate_if_needed;
-use crate::ezconsole::{new_style_e, style_e, TextComponent};
-
-mod auth;
-mod config;
-mod ezconsole;
+use choadra::protocol::play::c2s::KeepAlive;
+use choadra::protocol::play::s2c::S2CPlayPacket;
+use choadra_executables::auth::authenticate_if_needed;
+use choadra_executables::ezconsole::{new_style_e, style_e, TextComponent};
 
 #[derive(StructOpt, Debug)]
 #[structopt(name = "choadra-dumper")]
@@ -150,6 +148,12 @@ fn interactive(
 
     loop {
         let next = play_client.read_play_packet()?;
+        match &next {
+            S2CPlayPacket::KeepAlive(ka) => {
+                play_client.send_play_packet(KeepAlive { id: ka.id })?;
+            }
+            _ => {}
+        }
         println!(
             "{}",
             TextComponent::of_style(Style::new().dim().green()).mutate_children(|c| {

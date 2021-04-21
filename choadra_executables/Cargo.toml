@@ -1,6 +1,6 @@
 [package]
-name = "choadra_dumper"
-description = "Packet dumper using choadra"
+name = "choadra_executables"
+description = "Sample executables using choadra"
 keywords = ["minecraft"]
 categories = ["network-programming", "simulation", "development-tools"]
 version = "0.1.0+1.16.5"
@@ -37,4 +37,8 @@ path = "../"
 
 [[bin]]
 name = "choadra-dumper"
-path = "src/main.rs"
+path = "src/bin/choadra_dumper.rs"
+
+[[bin]]
+name = "choadra-interact-spammer"
+path = "src/bin/choadra_interact_spammer.rs"

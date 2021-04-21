@@ -1,7 +1,10 @@
 use std::fmt::{Display, Formatter};
+use std::io::Write;
 
 use binread::io::{Read, Seek};
 use binread::{BinRead, BinReaderExt, BinResult, ReadOptions};
+
+use crate::writeable::Writeable;
 
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct Position {
@@ -40,6 +43,27 @@ impl Position {
             return Err(PositionError::OutOfRange { axis: Axis::Z });
         }
         Ok(Position { x, y, z })
+    }
+}
+
+impl BinRead for Position {
+    type Args = ();
+
+    fn read_options<R: Read + Seek>(
+        reader: &mut R,
+        options: &ReadOptions,
+        _args: Self::Args,
+    ) -> BinResult<Self> {
+        let long_value = reader.read_type::<u64>(options.endian)?;
+        Ok(Position::from(long_value))
+    }
+}
+
+impl Writeable for Position {
+    type Args = ();
+
+    fn write_to<W: Write>(&self, write: &mut W, _: Self::Args) -> std::io::Result<()> {
+        u64::from(self).write_to(write, ())
     }
 }
 
@@ -163,18 +187,5 @@ mod tests {
         for (seed, expected) in TESTS.iter() {
             assert_eq!(*expected, u64::from(seed));
         }
-    }
-}
-
-impl BinRead for Position {
-    type Args = ();
-
-    fn read_options<R: Read + Seek>(
-        reader: &mut R,
-        options: &ReadOptions,
-        _args: Self::Args,
-    ) -> BinResult<Self> {
-        let long_value = reader.read_type::<u64>(options.endian)?;
-        Ok(Position::from(long_value))
     }
 }

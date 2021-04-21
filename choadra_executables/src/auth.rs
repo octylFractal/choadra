@@ -8,6 +8,8 @@ use choadra::mojang::validate::Validate;
 use choadra::protocol::datatype::uuid::UUID;
 
 use crate::config::APP_CONFIG;
+use choadra::mojang::error::HttpChoadraError;
+use std::path::PathBuf;
 
 pub fn authenticate_if_needed(
     offline_mode: bool,
@@ -31,11 +33,20 @@ pub fn authenticate_if_needed(
         }
         .exchange()?;
         if !valid {
-            let response = Refresh {
+            eprintln!("Refreshing token...");
+            let result = Refresh {
                 access_token: saved.token.clone(),
                 client_token: client_token.clone(),
             }
-            .exchange()?;
+            .exchange();
+            let response = match result {
+                Ok(r) => r,
+                Err(HttpChoadraError::AttoHttpClientError(_)) => {
+                    eprintln!("{}", format!("Failed to refresh, log in again please."));
+                    return login(username, client_token, &file);
+                }
+                Err(e) => return Err(ChoadraError::from(e)),
+            };
             saved = SavedCredentials {
                 username: response.selected_profile.name,
                 token: response.access_token,
@@ -44,15 +55,23 @@ pub fn authenticate_if_needed(
         }
         Ok(saved.into())
     } else {
-        let new_creds = ask_for_credentials(username, client_token)?;
-        std::fs::create_dir_all(&*APP_CONFIG)?;
-        serde_json::to_writer(std::fs::File::create(&file)?, &new_creds).map_err(|e| {
-            ChoadraError::InvalidState {
-                msg: format!("Failed to write to saved creds: {:?}", e),
-            }
-        })?;
-        Ok(new_creds.into())
+        login(username, client_token, &file)
     }
+}
+
+fn login(
+    username: String,
+    client_token: String,
+    file: &PathBuf,
+) -> ChoadraResult<(String, Option<Credentials>)> {
+    let new_creds = ask_for_credentials(username, client_token)?;
+    std::fs::create_dir_all(&*APP_CONFIG)?;
+    serde_json::to_writer(std::fs::File::create(&file)?, &new_creds).map_err(|e| {
+        ChoadraError::InvalidState {
+            msg: format!("Failed to write to saved creds: {:?}", e),
+        }
+    })?;
+    Ok(new_creds.into())
 }
 
 fn ask_for_credentials(username: String, client_token: String) -> ChoadraResult<SavedCredentials> {

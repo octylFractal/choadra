@@ -1,5 +1,5 @@
 [workspace]
-members = ["choadra_datatype", "choadra_dumper", "choadra_nbt"]
+members = ["choadra_datatype", "choadra_executables", "choadra_nbt"]
 
 [package]
 name = "choadra"

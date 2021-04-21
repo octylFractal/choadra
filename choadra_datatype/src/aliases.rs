@@ -57,7 +57,16 @@ impl Writeable for Int {
     type Args = ();
 
     fn write_to<W: Write>(&self, write: &mut W, _: Self::Args) -> Result<()> {
-        write_unsigned_int(write, *self as u32)
+        let unsigned = *self as u32;
+        unsigned.write_to(write, ())
+    }
+}
+
+impl Writeable for u32 {
+    type Args = ();
+
+    fn write_to<W: Write>(&self, write: &mut W, _: Self::Args) -> Result<()> {
+        write_unsigned_int(write, *self)
     }
 }
 
@@ -74,7 +83,16 @@ impl Writeable for Long {
     type Args = ();
 
     fn write_to<W: Write>(&self, write: &mut W, _: Self::Args) -> Result<()> {
-        write_unsigned_long(write, *self as u64)
+        let unsigned = *self as u64;
+        unsigned.write_to(write, ())
+    }
+}
+
+impl Writeable for u64 {
+    type Args = ();
+
+    fn write_to<W: Write>(&self, write: &mut W, _: Self::Args) -> Result<()> {
+        write_unsigned_long(write, *self)
     }
 }
 

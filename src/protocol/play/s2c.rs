@@ -2,8 +2,9 @@ use std::fmt::{Debug, Formatter};
 
 use binread::derive_binread;
 
-use crate::protocol::datatype::aliases::{Double, Int, Short};
+use crate::protocol::datatype::aliases::{Byte, Double, Int, Long, Short};
 use crate::protocol::datatype::angle::Angle;
+use crate::protocol::datatype::chat::parse_chat;
 use crate::protocol::datatype::uuid::{parse_uuid, UUID};
 use crate::protocol::datatype::varint::parse_varint;
 use crate::protocol::util::parse_until_eof;
@@ -14,6 +15,12 @@ use crate::protocol::util::parse_until_eof;
 pub enum S2CPlayPacket {
     #[br(pre_assert(id == 0x00))]
     SpawnEntity(SpawnEntity),
+    #[br(pre_assert(id == 0x0E))]
+    ChatMessage(ChatMessage),
+    #[br(pre_assert(id == 0x19))]
+    Disconnect(Disconnect),
+    #[br(pre_assert(id == 0x1F))]
+    KeepAlive(KeepAlive),
     Unknown(#[br(args(id))] Unknown),
 }
 
@@ -35,6 +42,38 @@ pub struct SpawnEntity {
     pub velocity_x: Short,
     pub velocity_y: Short,
     pub velocity_z: Short,
+}
+
+#[derive_binread]
+#[derive(Debug)]
+pub struct ChatMessage {
+    #[br(parse_with = parse_chat)]
+    pub message: String,
+    pub position: ChatPosition,
+    #[br(parse_with = parse_uuid)]
+    pub sender: UUID,
+}
+
+#[derive_binread]
+#[br(repr(Byte))]
+#[derive(Debug)]
+pub enum ChatPosition {
+    ChatBox = 0,
+    SystemMessage = 1,
+    GameInfo = 2,
+}
+
+#[derive_binread]
+#[derive(Debug)]
+pub struct Disconnect {
+    #[br(parse_with = parse_chat)]
+    pub reason: String,
+}
+
+#[derive_binread]
+#[derive(Debug)]
+pub struct KeepAlive {
+    pub id: Long,
 }
 
 #[derive_binread]
