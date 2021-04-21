@@ -1,22 +1,21 @@
 #![deny(warnings)]
 
 use std::net::{SocketAddr, TcpStream, ToSocketAddrs};
-use std::path::PathBuf;
 use std::process::exit;
 
 use anyhow::Context;
-use directories_next::ProjectDirs;
-use once_cell::sync::Lazy;
+use console::Style;
 use structopt::StructOpt;
 
 use choadra::client::{ChoadraClient, Credentials};
-use choadra::error::{ChoadraError, ChoadraResult};
-use choadra::mojang::auth::{Agent, Authenticate};
-use choadra::protocol::datatype::uuid::UUID;
+use choadra::error::ChoadraError;
 use choadra::protocol::handshake::c2s::CURRENT_PROTOCOL_VERSION;
 
+use crate::auth::authenticate_if_needed;
 use crate::ezconsole::{new_style_e, style_e, TextComponent};
 
+mod auth;
+mod config;
 mod ezconsole;
 
 #[derive(StructOpt, Debug)]
@@ -34,13 +33,6 @@ struct ChoadraDumper {
     #[structopt(short, long, default_value = "25565")]
     port: u16,
 }
-
-static APP_CONFIG: Lazy<PathBuf> = Lazy::new(|| {
-    ProjectDirs::from("net.octyl", "choadra", "choadra_dumper")
-        .expect("Failed to find project dirs")
-        .config_dir()
-        .to_owned()
-});
 
 fn main() {
     let args: ChoadraDumper = ChoadraDumper::from_args();
@@ -69,53 +61,6 @@ fn main_for_result(args: ChoadraDumper) -> anyhow::Result<()> {
     interactive(socket_addr, username, credentials)?;
 
     Ok(())
-}
-
-fn authenticate_if_needed(
-    offline_mode: bool,
-    username: String,
-) -> ChoadraResult<(String, Option<Credentials>)> {
-    if offline_mode {
-        return Ok((username, None));
-    }
-
-    let password = rpassword::prompt_password_stderr("Password: ").map_err(|_| {
-        ChoadraError::InvalidState {
-            msg: format!("Needed a password, but none given."),
-        }
-    })?;
-
-    let client_token = generate_or_load_client_token()?;
-
-    let response = Authenticate {
-        agent: Agent {
-            name: "Minecraft".to_string(),
-            version: 1,
-        },
-        username,
-        password,
-        client_token: Some(client_token),
-    }
-    .exchange()?;
-    Ok((
-        response.selected_profile.name,
-        Some(Credentials {
-            token: response.access_token,
-            profile: response.selected_profile.id,
-        }),
-    ))
-}
-
-fn generate_or_load_client_token() -> ChoadraResult<String> {
-    let file = APP_CONFIG.join("client_token.txt");
-    if file.exists() {
-        std::fs::read_to_string(file).map_err(ChoadraError::from)
-    } else {
-        let uuid = UUID::new_v4().to_string();
-        std::fs::create_dir_all(&*APP_CONFIG)?;
-        std::fs::write(file, uuid.as_bytes())?;
-        Ok(uuid)
-    }
 }
 
 fn check_status(socket_addr: SocketAddr) -> anyhow::Result<()> {
@@ -183,7 +128,7 @@ fn interactive(
 ) -> anyhow::Result<()> {
     let stream = TcpStream::connect(socket_addr.clone())
         .with_context(|| format!("Failed to connect to {:?}", socket_addr))?;
-    let play_client = ChoadraClient::new(stream)
+    let mut play_client = ChoadraClient::new(stream)
         .request_login()
         .context("Failed to request login state from server")?
         .login(username.clone(), credentials)
@@ -204,6 +149,15 @@ fn interactive(
     );
 
     loop {
-        unreachable!();
+        let next = play_client.read_play_packet()?;
+        println!(
+            "{}",
+            TextComponent::of_style(Style::new().dim().green()).mutate_children(|c| {
+                c.extend(vec![
+                    TextComponent::of("Received play packet: "),
+                    TextComponent::of_styled(format!("{:#?}", next), Style::new().cyan()),
+                ]);
+            }),
+        );
     }
 }

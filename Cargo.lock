@@ -215,11 +215,12 @@ dependencies = [
  "anyhow",
  "binread",
  "choadra",
- "choadra_datatype",
  "console",
  "directories-next",
  "once_cell",
  "rpassword",
+ "serde",
+ "serde_json",
  "structopt",
  "uuid",
 ]

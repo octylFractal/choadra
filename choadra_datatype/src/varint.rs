@@ -173,6 +173,7 @@ mod tests {
             (4i32, &[4]),
             (0i32, &[0]),
             (0x80i32, &[0x80, 0x01]),
+            (0xB1Ai32, &[0x9A, 0x16]),
             (-0x80_00_00_00i32, &[0x80, 0x80, 0x80, 0x80, 0x8]),
             (0x01_01_01_01i32, &[0x81, 0x82, 0x84, 0x08]),
         ]
@@ -182,7 +183,7 @@ mod tests {
     fn parse_varint_test() {
         for (expected, input) in VARINT_CASES.iter() {
             eprintln!("{:X?}", input);
-            assert_eq!(*expected, ez_parse::<i32>(*input));
+            assert_eq!(*expected, ez_parse::<Int>(*input));
         }
     }
 
@@ -197,7 +198,7 @@ mod tests {
 
     #[test]
     fn parse_varint_empty_array() {
-        let failure = ez_failure::<i32>(&[]);
+        let failure = ez_failure::<Int>(&[]);
         let io_failure = match failure {
             binread::Error::Io(io) => io,
             x => panic!("{:?} was not expected", x),
@@ -213,7 +214,7 @@ mod tests {
 
     #[test]
     fn parse_varint_too_large() {
-        let failure = ez_failure::<i32>(&[0x80, 0x80, 0x80, 0x80, 0x10]);
+        let failure = ez_failure::<Int>(&[0x80, 0x80, 0x80, 0x80, 0x10]);
         let io_failure = match failure {
             binread::Error::Io(io) => io,
             x => panic!("{:?} was not expected", x),
@@ -248,7 +249,7 @@ mod tests {
     #[test]
     fn parse_varlong_test() {
         for (expected, input) in VARLONG_CASES.iter() {
-            assert_eq!(*expected, ez_parse::<i64>(*input));
+            assert_eq!(*expected, ez_parse::<Long>(*input));
         }
     }
 
@@ -263,7 +264,7 @@ mod tests {
 
     #[test]
     fn parse_varlong_empty_array() {
-        let failure = ez_failure::<i64>(&[]);
+        let failure = ez_failure::<Long>(&[]);
         let io_failure = match failure {
             binread::Error::Io(io) => io,
             x => panic!("{:?} was not expected", x),
@@ -280,7 +281,7 @@ mod tests {
     #[test]
     fn parse_varlong_too_large() {
         let failure =
-            ez_failure::<i64>(&[0x80, 0x80, 0x80, 0x80, 0x80, 0x80, 0x80, 0x80, 0x80, 0x02]);
+            ez_failure::<Long>(&[0x80, 0x80, 0x80, 0x80, 0x80, 0x80, 0x80, 0x80, 0x80, 0x02]);
         let io_failure = match failure {
             binread::Error::Io(io) => io,
             x => panic!("{:?} was not expected", x),

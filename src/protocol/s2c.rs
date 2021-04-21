@@ -64,23 +64,26 @@ pub fn read_s2c_packet<T: BinRead<Args = (Int,)>, R: Read>(
     let mut options = ReadOptions::default();
     options.endian = Endian::Big;
     let length = parse_varint(&mut reader, &options, ())?;
-    let uncompressed_length = match args.compression_threshold() {
-        Some(max) => match parse_varint(&mut reader, &options, ())? {
-            0 => None,
+    let (need_decompress, inner_length) = match args.compression_threshold() {
+        Some(min) => match parse_varint(&mut reader, &options, ())? {
+            0 => (false, length - 1),
             x => {
-                if x > max {
+                if x < min {
                     return Err(ChoadraError::ServerError {
-                        msg: "Compression threshold exceeded".to_string(),
+                        msg: format!(
+                            "Compression threshold {} not met, got a compressed packet of size {}",
+                            min, x
+                        ),
                     });
                 }
-                Some(x)
+                (true, x)
             }
         },
-        None => None,
+        None => (false, length),
     };
 
-    let mut uncompressed = vec![0u8; uncompressed_length.unwrap_or(length) as usize];
-    if uncompressed_length.is_some() {
+    let mut uncompressed = vec![0u8; inner_length as usize];
+    if need_decompress {
         // Decompress into the vec
         let compressed = {
             let mut compressed = vec![0u8; length as usize];

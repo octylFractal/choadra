@@ -1,3 +1,5 @@
+use std::collections::VecDeque;
+
 use aes::cipher::generic_array::GenericArray;
 use aes::cipher::NewStreamCipher;
 use aes::Aes128;
@@ -67,6 +69,8 @@ impl ChoadraClient<Login> {
                     return Ok(self.into_other_variant(Play {
                         username: ls.username,
                         uuid: ls.uuid,
+                        really_playing: false,
+                        packet_queue: VecDeque::new(),
                     }));
                 }
                 p => {

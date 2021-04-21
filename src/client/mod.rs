@@ -4,3 +4,4 @@ mod def;
 mod impl_handshaking;
 mod impl_login;
 mod impl_status;
+mod impl_play;
