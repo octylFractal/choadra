@@ -1,7 +1,7 @@
 use crate::client::{ChoadraClient, Play};
 use crate::error::ChoadraResult;
-use crate::protocol::play::s2c::S2CPlayPacket;
 use crate::protocol::play::c2s::C2SPlayPacket;
+use crate::protocol::play::s2c::S2CPlayPacket;
 
 impl ChoadraClient<Play> {
     pub fn read_play_packet(&mut self) -> ChoadraResult<S2CPlayPacket> {

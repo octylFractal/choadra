@@ -1,3 +1,5 @@
+use std::fmt::{Debug, Formatter};
+
 use binread::derive_binread;
 
 use crate::protocol::datatype::aliases::{Double, Int, Short};
@@ -5,7 +7,6 @@ use crate::protocol::datatype::angle::Angle;
 use crate::protocol::datatype::uuid::{parse_uuid, UUID};
 use crate::protocol::datatype::varint::parse_varint;
 use crate::protocol::util::parse_until_eof;
-use std::fmt::{Debug, Formatter};
 
 #[derive_binread]
 #[br(import(id: Int))]

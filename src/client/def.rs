@@ -3,8 +3,8 @@ use std::fmt::{Debug, Formatter};
 use std::io::{BufWriter, Write};
 use std::net::TcpStream;
 
-use binread::BinRead;
 use binread::io::Read;
+use binread::BinRead;
 
 use crate::error::ChoadraResult;
 use crate::protocol::aes::AesStream;
@@ -13,7 +13,7 @@ use crate::protocol::datatype::aliases::Int;
 use crate::protocol::datatype::uuid::UUID;
 use crate::protocol::datatype::writeable::Writeable;
 use crate::protocol::play::s2c::S2CPlayPacket;
-use crate::protocol::s2c::{PacketReadState, read_s2c_packet};
+use crate::protocol::s2c::{read_s2c_packet, PacketReadState};
 
 pub struct ChoadraClient<S> {
     pub(crate) writer: EncryptableStream<BufWriter<TcpStream>>,

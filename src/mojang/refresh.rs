@@ -1,8 +1,8 @@
 use attohttpc::body::Json;
 use serde::{Deserialize, Serialize};
 
-use crate::mojang::error::HttpChoadraResult;
 use crate::mojang::auth::Profile;
+use crate::mojang::error::HttpChoadraResult;
 
 #[derive(Serialize)]
 pub struct Refresh {
